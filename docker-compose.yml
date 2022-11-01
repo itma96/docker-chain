@@ -1,0 +1,88 @@
+version: "3"
+
+services:
+
+  traefik:
+    image: traefik
+    command: --docker \
+      --docker.swarmmode \
+      --docker.watch \
+      --web \
+      --loglevel=DEBUG
+    ports:
+      - "80:80"
+      - "9090:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      restart_policy:
+        condition: any
+      mode: replicated
+      replicas: 1
+      update_config:
+        delay: 2s
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - webnet
+
+  client:
+    depends_on:
+      - "redis"
+    image: itma96/dockerchain:client
+    command: python client.py
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.role == worker]
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 50M
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.docker.network=dockerchain_webnet"
+        - "traefik.port=8080"
+        - "traefik.frontend.rule=PathPrefix: /client/, /static/"
+    ports:
+      - "8888:8080"
+    networks:
+      - webnet
+
+  worker:
+    depends_on:
+      - "redis"
+    image: itma96/dockerchain:worker
+    command: python worker.py
+    deploy:
+      replicas: 2
+      placement:
+        constraints: [node.role == worker]
+      update_config:
+        delay: 2s
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 50M
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.docker.network=dockerchain_webnet"
+        - "traefik.port=8080"
+        - "traefik.frontend.rule=PathPrefix: /worker/, /static/"
+        - "traefik.backend.loadbalancer.sticky=true"
+    ports:
+      - "5555:8080"
+    networks:
+      - webnet
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports: ["6379"]
+    networks:
+      - webnet
+
+networks:
+  webnet:

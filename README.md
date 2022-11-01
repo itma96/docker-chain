@@ -1,1 +1,1 @@
-# docker-chain
+A simplified & scaled-down version of a blockchain network using Docker containers.
