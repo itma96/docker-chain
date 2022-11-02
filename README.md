@@ -1,1 +1,1 @@
-A simplified & scaled-down version of a blockchain network using Docker containers.
+This project aimed to simulate a small-scale blockchain network using Docker containers. It mainly consists of two actors: the client nodes and the worker nodes. The communication between them is provided through a redis message queue, also provided through a container. This project thought me a little about how a blockchain works, how transactions are issued and how consensus can reached. I also learned a lot about containerization with Docker and Docker Swarm.
